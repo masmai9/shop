@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ร้านค้าออนไลน์ — คู่มือติดตั้งและใช้งาน
 
-## Getting Started
+เว็บขายของสำหรับ 3 หมวด (เครื่องดนตรี / นาฬิกา / Gadget & IT) พร้อมระบบออเดอร์ สต๊อก
+รับเงินด้วย QR พร้อมเพย์ + อัปโหลดสลิป และหลังบ้านสำหรับแอดมิน
 
-First, run the development server:
+**ใช้ของฟรีทั้งหมด:** Supabase (ฐานข้อมูล + เก็บรูป) และ Vercel (ขึ้นเว็บ)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## ติดตั้ง (ประมาณ 15 นาที)
+
+### 1. สร้างฐานข้อมูลบน Supabase
+1. สมัคร/เข้า https://supabase.com → **New project** (Region เลือก Singapore จะเร็วสุดสำหรับไทย)
+2. เมนูซ้าย **SQL Editor** → **New query** → เปิดไฟล์ `supabase/schema.sql` คัดลอกทั้งหมดไปวาง → **Run**
+   - ระบบจะสร้างตาราง 3 หมวดตั้งต้น และที่เก็บรูป (`products`, `slips`) ให้เอง
+   - รันซ้ำได้ ไม่ลบข้อมูลเดิม
+3. เมนู **Project Settings → API** จดค่า 3 ตัว: `Project URL`, `anon public`, `service_role`
+
+### 2. ขึ้นเว็บบน Vercel
+1. อัปโหลดโฟลเดอร์นี้ขึ้น GitHub (repo แบบ private ได้)
+2. https://vercel.com → **Add New → Project** → เลือก repo นั้น
+3. ใส่ **Environment Variables** ตามนี้ แล้วกด **Deploy**
+
+| ชื่อ | ค่า |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Project URL จากข้อ 1 |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | service_role key (**ห้ามเปิดเผย**) |
+| `SESSION_SECRET` | ข้อความสุ่มยาว 32 ตัวขึ้นไป (สร้างได้ที่ https://generate-secret.vercel.app/32) |
+| `ADMIN_PASSWORD` | รหัสผ่านเข้าหลังบ้าน |
+
+### 3. ตั้งค่าร้าน (ทำครั้งเดียว)
+1. เข้า `https://เว็บของคุณ/admin` → ใส่ `ADMIN_PASSWORD`
+2. **ตั้งค่าร้าน** → ใส่ชื่อร้าน, **เบอร์/เลขพร้อมเพย์** (สำคัญ — ไม่ใส่ ลูกค้าจะสั่งไม่ได้), ค่าส่ง
+3. **สินค้าและสต๊อก** → เพิ่มสินค้า ใส่รูป ราคา จำนวน
+
+> ทดสอบในเครื่องตัวเอง: คัดลอก `.env.example` เป็น `.env.local` ใส่ค่า แล้ว `npm install && npm run dev` → เปิด http://localhost:3000
+
+---
+
+## การทำงานของระบบ
+
+### ลูกค้า
+1. หน้าแรกเลือก "ห้อง" ที่สนใจ (แต่ละหมวดมีสีและลวดลายของตัวเอง) → ดูสินค้า → ใส่ตะกร้า
+2. ชำระเงิน: กรอก **เบอร์โทร + PIN 4 หลัก** (ครั้งแรกตั้ง PIN ได้เลย ไม่ต้องสมัครสมาชิก) + ที่อยู่
+3. ได้ **QR พร้อมเพย์ที่ใส่ยอดเงินให้แล้ว** → โอน → อัปโหลดสลิปในหน้าเดียวกัน
+4. ดูสถานะ/เลขพัสดุ/ประวัติทั้งหมดได้ที่ "คำสั่งซื้อของฉัน" ด้วยเบอร์ + PIN
+
+### แอดมิน
+- **ภาพรวม:** แจ้งเตือนเมื่อมีสลิปรอตรวจ และสินค้าใกล้หมด
+- **คำสั่งซื้อ:** ดูสลิปคู่กับยอดที่ต้องได้รับ → กด "สลิปถูกต้อง" หรือ "ให้ลูกค้าส่งใหม่" (พร้อมหมายเหตุ) → ใส่เลขพัสดุ → "จัดส่งแล้ว" → "สำเร็จ"
+- **สต๊อก:** ลดอัตโนมัติเมื่อมีคนสั่ง, **คืนอัตโนมัติเมื่อยกเลิก**, กด +/− ปรับได้จากหน้ารายการ
+- **ลูกค้าลืม PIN:** เปิดออเดอร์ของลูกค้า → "รีเซ็ตให้"
+
+### สถานะออเดอร์
+`รอชำระเงิน → รอตรวจสลิป → ชำระแล้ว → จัดส่งแล้ว → สำเร็จ` (ยกเลิกได้ทุกขั้น สต๊อกคืนเอง)
+
+---
+
+## ความปลอดภัยที่ทำไว้แล้ว
+- ราคาและสต๊อก **คำนวณที่ฐานข้อมูลเสมอ** ลูกค้าแก้ราคาในเบราว์เซอร์ไม่ได้
+- ตัดสต๊อกแบบ atomic: 2 คนกดซื้อชิ้นสุดท้ายพร้อมกัน จะได้แค่คนเดียว
+- ฐานข้อมูลปิดการเข้าถึงจากเบราว์เซอร์ทั้งหมด (RLS) ทุกอย่างผ่านเซิร์ฟเวอร์
+- PIN เข้ารหัส (bcrypt) และล็อก 15 นาทีเมื่อใส่ผิด 5 ครั้ง
+- ลูกค้าเห็นได้เฉพาะออเดอร์ของตัวเอง, สลิปเก็บแบบส่วนตัว แอดมินดูผ่านลิงก์ชั่วคราว
+
+---
+
+## ปรับแต่ง/ต่อยอด (โค้ดออกแบบให้แก้จุดเดียว)
+
+| อยากทำ | แก้ที่ |
+|---|---|
+| เพิ่ม/แก้หมวด สี ลวดลาย รูปแบนเนอร์ | หลังบ้าน → หมวดสินค้าและธีม (ไม่ต้องแก้โค้ด) |
+| **เพิ่มบัตรเครดิต** (Omise / 2C2P / Stripe) | `src/lib/payments/card.ts` — มีขั้นตอนเขียนไว้ในไฟล์, webhook รอไว้ที่ `/api/payments/card` |
+| เพิ่มช่องทางชำระเงินอื่น | สร้างไฟล์ใหม่ใน `src/lib/payments/` แล้วเพิ่มใน `index.ts` — หน้า checkout แสดงเอง |
+| เพิ่ม/เปลี่ยนชื่อสถานะออเดอร์ | `src/lib/order-status.ts` (+ enum ใน `schema.sql`) |
+| หัวข้อคุณสมบัติแนะนำของแต่ละหมวด | `SPEC_HINTS` ใน `src/app/admin/(panel)/products/ProductForm.tsx` |
+| เพิ่มลวดลายหมวดใหม่ | `src/components/Motif.tsx` |
+| สี/ฟอนต์ทั้งเว็บ | `src/app/globals.css` (ส่วน Design tokens) |
+| ค่าตั้งค่าร้านใหม่ | `src/lib/repo/settings.ts` (เก็บแบบ key/value ไม่ต้องแก้ตาราง) |
+
+### โครงสร้างโค้ด
+```
+supabase/schema.sql        ตาราง + ฟังก์ชันสร้างออเดอร์/เปลี่ยนสถานะ (ตัด/คืนสต๊อก)
+src/lib/repo/              ทุกการอ่าน/เขียนฐานข้อมูลอยู่ที่นี่ที่เดียว
+src/lib/payments/          ช่องทางชำระเงิน (ปลั๊กอิน)
+src/lib/promptpay.ts       สร้าง QR พร้อมเพย์มาตรฐาน EMVCo
+src/app/(shop)/            หน้าร้าน: หน้าแรก หมวด สินค้า ตะกร้า ชำระเงิน ออเดอร์ บัญชี
+src/app/admin/             หลังบ้าน
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### ทดสอบ
+- `npm run test:db` — ทดสอบฟังก์ชันฐานข้อมูล (ตัดสต๊อก, กันของเกิน, คืนสต๊อก, ค่าส่ง)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## หมายเหตุ
+- ออเดอร์ที่ไม่จ่ายเงินจะ "จองสต๊อก" ไว้จนกว่าจะยกเลิก — แอดมินกรองดู "รอชำระเงิน" แล้วยกเลิกได้ (เวอร์ชันถัดไปทำยกเลิกอัตโนมัติได้)
+- Supabase แพ็กฟรีจะหยุดโปรเจกต์ถ้าไม่มีการใช้งาน 7 วัน (กด Restore ได้) — เมื่อขายจริงจังแนะนำแพ็ก Pro
